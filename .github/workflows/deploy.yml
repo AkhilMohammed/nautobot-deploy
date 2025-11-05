@@ -97,7 +97,7 @@ jobs:
           options: >-
             -i ansible/inventory.ini
             -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
+          ssh-agent: true   # <-- enable ssh-agent
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           ANSIBLE_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          
