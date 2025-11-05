@@ -90,14 +90,12 @@ jobs:
           echo "[nautobot_servers]" > ansible/inventory.ini
           echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> ansible/inventory.ini
 
-      - name: Deploy Nautobot on EC2 (Ansible)
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: playbooks/deploy.yml
-          options: >-
-            -i ansible/inventory.ini
-            -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
-          ssh-agent: true   # <-- enable ssh-agent
+      
+      - name: Deploy Nautobot on EC2
+        run: |
+          ansible-playbook playbooks/deploy.yml \
+            -i ansible/inventory.ini \
+            -e "combined_image=${IMAGE_REPO}:${GITHUB_SHA}" \
+            -e "ansible_ssh_private_key_file=${{ secrets.SSH_PRIVATE_KEY }}"
         env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
-          ANSIBLE_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          ANSIBLE_HOST_KEY_CHECKING: False
