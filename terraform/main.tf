@@ -25,8 +25,11 @@ data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "default_subnets" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
 }
 
 resource "aws_instance" "nautobot_vm" {
@@ -36,9 +39,7 @@ resource "aws_instance" "nautobot_vm" {
   vpc_security_group_ids = [aws_security_group.nautobot_sg.id]
 
   associate_public_ip_address = true
-
-  # Use the default VPC & default subnet automatically
-  subnet_id = data.aws_subnet_ids.default_subnets.ids[0]
+  subnet_id                   = data.aws_subnets.default.ids[0]
 
   tags = {
     Name = "nautobot-poc"
