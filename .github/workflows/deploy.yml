@@ -9,10 +9,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/nautobot-combined
+      IMAGE_REPO: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/nautobot-demo
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -24,58 +24,66 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
-      - name: Build & Push Combined Image
+      - name: Build & Push Combined Image to Docker Hub
         env:
-          GHCR_USER: ${{ secrets.GHCR_USER }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           COMBINED_IMAGE="${IMAGE_REPO}:${{ github.sha }}"
-          echo "Building combined image: $COMBINED_IMAGE"
-          bash scripts/build_combined_image.sh "$COMBINED_IMAGE" "ansible/inventories/prod/group_vars/nautobot.yml" "$GHCR_USER" "$GHCR_TOKEN"
-          # Also tag "latest" for convenience and push
+          echo "Building combined image → $COMBINED_IMAGE"
+          
+          bash scripts/build_combined_image.sh \
+            "$COMBINED_IMAGE" \
+            "ansible/inventories/prod/group_vars/nautobot.yml" \
+            "$DOCKERHUB_USERNAME" \
+            "$DOCKERHUB_TOKEN"
+
           docker tag "$COMBINED_IMAGE" "${IMAGE_REPO}:latest"
-          echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USER --password-stdin
+
+          echo "$DOCKERHUB_TOKEN" | docker login \
+            -u "$DOCKERHUB_USERNAME" --password-stdin
+
+          docker push "$COMBINED_IMAGE"
           docker push "${IMAGE_REPO}:latest"
-        # Save the chosen image into outputs for later steps
-      - name: Set image outputs
+
+      - name: Set image for next steps
         id: set_image
         run: echo "image=${{ env.IMAGE_REPO }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Terraform Init
+      - name: Terraform Init + Apply
         working-directory: terraform
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           terraform init
-          terraform apply -auto-approve -var="ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" -var="ami_id=${{ secrets.AMI_ID }}" -var="aws_region=${{ secrets.AWS_REGION }}"
+          terraform apply -auto-approve \
+            -var="ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" \
+            -var="ami_id=${{ secrets.AMI_ID }}" \
+            -var="aws_region=${{ secrets.AWS_REGION }}"
 
-      - name: Get Instance IP
+      - name: Fetch Public IP from Terraform
         working-directory: terraform
         id: tf_out
         run: |
-          terraform output -raw instance_public_ip > instance_ip.txt
-          echo "ip=$(cat instance_ip.txt)" >> $GITHUB_OUTPUT
+          terraform output -raw instance_public_ip > ../instance_ip.txt
+          echo "ip=$(cat ../instance_ip.txt)" >> $GITHUB_OUTPUT
 
-      - name: Create dynamic inventory
+      - name: Create Dynamic Inventory
         run: |
           echo "[nautobot_servers]" > inventory.ini
-          echo "${{ steps.tf_out.outputs.ip }}" >> inventory.ini
-          echo "ansible_user=ubuntu" >> inventory.ini
+          echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> inventory.ini
 
-      - name: Run Ansible Playbook (deploy)
+      - name: Deploy Nautobot on EC2 (Ansible)
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: ansible/playbooks/deploy.yml
           inventory: inventory.ini
           args: >-
             -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
-            -e "combined_image_tag=${{ github.sha }}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           ANSIBLE_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
