@@ -87,14 +87,13 @@ jobs:
       - name: Create Dynamic Inventory
         run: |
           mkdir -p ansible
-          echo "[nautobot_servers]" > inventory.ini
-          echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> inventory.ini
+          echo "[nautobot_servers]" > ansible/inventory.ini
+          echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> ansible/inventory.ini
 
       - name: Deploy Nautobot on EC2 (Ansible)
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: playbooks/deploy.yml
-          inventory: inventory.ini
           options: >-
             -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
 
