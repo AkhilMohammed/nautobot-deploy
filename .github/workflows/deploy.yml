@@ -86,6 +86,7 @@ jobs:
 
       - name: Create Dynamic Inventory
         run: |
+          mkdir -p ansible
           echo "[nautobot_servers]" > inventory.ini
           echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> inventory.ini
 
