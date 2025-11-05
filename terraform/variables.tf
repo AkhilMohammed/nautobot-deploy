@@ -1,6 +1,6 @@
 variable "aws_region" {
   type    = string
-  default = "ap-south-1"
+  default = "eu-north-1"
 }
 
 variable "instance_type" {
@@ -10,8 +10,8 @@ variable "instance_type" {
 
 variable "ami_id" {
   type    = string
-  # ✅ Latest Ubuntu 22.04 LTS for ap-south-1 (HVM)
-  default = "ami-0f58b397bc5c1f2e8"
+  # ✅ Latest Ubuntu 22.04 LTS for eu-north-1 (HVM)
+  default = "ami-07fe61fd7f2c8abed"
 }
 
 variable "ssh_key_name" {
