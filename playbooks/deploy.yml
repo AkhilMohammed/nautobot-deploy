@@ -9,4 +9,4 @@
   roles:
     - docker-install
     - fetch_plugins
-    - deploy-compose
+    - docker-compose
