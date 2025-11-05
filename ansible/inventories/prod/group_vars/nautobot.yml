@@ -3,7 +3,7 @@
 plugins:
   - name: "nautobot-demo-plugin"
     repo: "https://github.com/AkhilMohammed/nautobot-demo-plugin.git"
-    branch: "main"
+    branch: "feat/intial"
 
 # Optional: docker image tag for the combined image
 combined_image_tag: "latest"
