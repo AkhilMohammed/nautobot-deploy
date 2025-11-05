@@ -36,7 +36,7 @@ for i in "${!PLUGIN_REPOS[@]}"; do
   echo "Cloning ${REPO} -> ${NAME}"
   
   # ✅ using GitHub token for private repo clone
-  AUTH_REPO="https://${GITHUB_ACTOR}:${DOCKER_TOKEN}@${REPO#https://}"
+  AUTH_REPO="https://${GITHUB_ACTOR}:${GHCR_TOKEN}@${REPO#https://}"
   git clone --depth 1 "$AUTH_REPO" "$NAME"
 done
 
