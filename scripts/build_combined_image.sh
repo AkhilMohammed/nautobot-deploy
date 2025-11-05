@@ -37,7 +37,10 @@ for i in "${!PLUGIN_REPOS[@]}"; do
   REPO="${PLUGIN_REPOS[$i]}"
   NAME="${PLUGIN_NAMES[$i]}"
   echo "Cloning ${REPO} -> ${NAME}"
-  git clone --depth 1 "$REPO" "$NAME"
+  AUTH_REPO="https://${GITHUB_ACTOR}:${GHCR_TOKEN}@${REPO#https://}"
+    echo "Cloning ${REPO} -> ${NAME}"
+    git clone --depth 1 "$AUTH_REPO" "$NAME"
+
 done
 
 # Create Dockerfile that starts FROM base Nautobot image and copies all plugin folders

@@ -28,8 +28,10 @@ jobs:
 
       - name: Build & Push Combined Image
         env:
-          GHCR_USER: ${{ secrets.GHCR_USERNAME }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           COMBINED_IMAGE="${IMAGE_REPO}:${{ github.sha }}"
           echo "Building combined image: $COMBINED_IMAGE"
