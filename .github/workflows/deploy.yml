@@ -31,6 +31,7 @@ jobs:
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           COMBINED_IMAGE="${IMAGE_REPO}:${{ github.sha }}"
           echo "Building combined image → $COMBINED_IMAGE"
