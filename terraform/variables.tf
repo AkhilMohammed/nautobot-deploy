@@ -11,7 +11,7 @@ variable "instance_type" {
 variable "ami_id" {
   type    = string
   # ✅ Latest Ubuntu 22.04 LTS for eu-north-1 (HVM)
-  default = "ami-01fd6fa49060e89a6"
+  default = "ami-0a716d3f3b16d290c"
 }
 
 variable "ssh_key_name" {
