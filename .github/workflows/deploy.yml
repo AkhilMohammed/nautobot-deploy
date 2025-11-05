@@ -20,6 +20,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
       - name: Install yq
         run: |
           sudo apt-get update
@@ -54,13 +59,19 @@ jobs:
         id: set_image
         run: echo "image=${{ env.IMAGE_REPO }}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Terraform Init + Apply
+      - name: Terraform Init
+        working-directory: terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: terraform init
+
+      - name: Terraform Apply
         working-directory: terraform
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          terraform init
           terraform apply -auto-approve \
             -var="ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" \
             -var="ami_id=${{ secrets.AMI_ID }}" \
