@@ -2,7 +2,7 @@
 # List of plugin entries. Each entry must include: name, repo, branch (optional)
 plugins:
   - name: "nautobot-demo-plugin"
-    repo: "https://github.com/AkhilMohammed/nautobot-demo-plugin.git"
+    repo: "https://github.com/AkhilMohammed/nautobot-deploy.git"
     branch: "feat/intial"
 
 # Optional: docker image tag for the combined image
