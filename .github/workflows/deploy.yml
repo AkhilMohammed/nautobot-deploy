@@ -90,12 +90,17 @@ jobs:
           echo "[nautobot_servers]" > ansible/inventory.ini
           echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> ansible/inventory.ini
 
-      
+      - name: Save SSH private key to file
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
       - name: Deploy Nautobot on EC2
         run: |
           ansible-playbook playbooks/deploy.yml \
             -i ansible/inventory.ini \
             -e "combined_image=${IMAGE_REPO}:${GITHUB_SHA}" \
-            -e "ansible_ssh_private_key_file=${{ secrets.SSH_PRIVATE_KEY }}"
+            -e "ansible_ssh_private_key_file=~/.ssh/id_rsa"
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
