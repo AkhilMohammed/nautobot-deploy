@@ -21,17 +21,26 @@ resource "aws_security_group" "nautobot_sg" {
   }
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnet_ids" "default_subnets" {
+  vpc_id = data.aws_vpc.default.id
+}
+
 resource "aws_instance" "nautobot_vm" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = [aws_security_group.nautobot_sg.id]
 
+  associate_public_ip_address = true
+
+  # Use the default VPC & default subnet automatically
+  subnet_id = data.aws_subnet_ids.default_subnets.ids[0]
+
   tags = {
     Name = "nautobot-poc"
   }
-}
-
-output "instance_public_ip" {
-  value = aws_instance.nautobot_vm.public_ip
 }
