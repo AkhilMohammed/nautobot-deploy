@@ -95,8 +95,9 @@ jobs:
         with:
           playbook: playbooks/deploy.yml
           options: >-
+            -i ansible/inventory.ini
             -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
-
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           ANSIBLE_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          

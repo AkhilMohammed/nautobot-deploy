@@ -10,4 +10,4 @@ combined_image_tag: "latest"
 
 # GHCR credentials will be passed as secrets/env; provide as extra-vars in workflow
 # github_token: "{{ lookup('env','GHCR_TOKEN') }}"
-#new line fsmfhkffdddjj
+#new line fsmfhkffdddjjdda
