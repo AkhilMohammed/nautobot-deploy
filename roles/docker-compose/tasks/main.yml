@@ -1,0 +1,31 @@
+
+---
+- name: Create directory for nautobot deployment
+  file:
+    path: /opt/nautobot
+    state: directory
+    mode: 0755
+
+- name: Render docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: /opt/nautobot/docker-compose.yml
+    mode: 0644
+  vars:
+    combined_image: "{{ combined_image | default('ghcr.io/' ~ lookup('env','GITHUB_REPOSITORY_OWNER') ~ '/nautobot-combined:' ~ combined_image_tag) }}"
+    db_user: "nautobot"
+    db_password: "nautobot"
+    db_name: "nautobot"
+    db_host: "postgres"
+    db_port: 5432
+
+- name: Pull combined image
+  docker_image:
+    name: "{{ combined_image }}"
+    source: pull
+
+- name: Start docker compose stack
+  shell: >
+    docker compose -f /opt/nautobot/docker-compose.yml up -d
+  args:
+    chdir: /opt/nautobot

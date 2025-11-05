@@ -1,0 +1,26 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install packages
+  apt:
+    name:
+      - docker.io
+      - docker-compose-plugin
+      - git
+      - python3-pip
+    state: present
+
+- name: Ensure user 'ubuntu' exists (safe)
+  user:
+    name: ubuntu
+    groups: docker
+    append: yes
+    state: present
+
+- name: Add current user to docker group (if using ubuntu)
+  command: usermod -aG docker ubuntu
+  become: true
+  ignore_errors: true

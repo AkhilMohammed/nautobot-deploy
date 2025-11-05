@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: {{ db_user }}
+      POSTGRES_PASSWORD: {{ db_password }}
+      POSTGRES_DB: {{ db_name }}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  nautobot-app:
+    image: "{{ combined_image }}"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - NAUTOBOT_DB_USER={{ db_user }}
+      - NAUTOBOT_DB_PASSWORD={{ db_password }}
+      - NAUTOBOT_DB_NAME={{ db_name }}
+      - NAUTOBOT_DB_HOST=postgres
+      - NAUTOBOT_DB_PORT={{ db_port }}
+
+  nautobot-worker:
+    image: "{{ combined_image }}"
+    command: nautobot-server runworker
+    depends_on:
+      - postgres
+
+  nautobot-beat:
+    image: "{{ combined_image }}"
+    command: nautobot-server run_beat
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:

@@ -1,0 +1,13 @@
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+*.tfvars
+
+# OS
+.DS_Store
+*.log
+
+# Local scripts
+*.pyc
+__pycache__/

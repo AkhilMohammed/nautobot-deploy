@@ -1,0 +1,12 @@
+---
+- name: Deploy Nautobot stack on target host(s)
+  hosts: nautobot_servers
+  become: true
+
+  vars_files:
+    - ../inventories/prod/group_vars/nautobot.yml
+
+  roles:
+    - docker-install
+    - fetch-plugins
+    - deploy-compose

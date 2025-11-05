@@ -1,0 +1,79 @@
+name: Build + Deploy Nautobot Combined Image & Provision
+
+on:
+  push:
+    paths:
+      - 'ansible/inventories/prod/group_vars/nautobot.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/nautobot-combined
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install yq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq
+
+      - name: Build & Push Combined Image
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          COMBINED_IMAGE="${IMAGE_REPO}:${{ github.sha }}"
+          echo "Building combined image: $COMBINED_IMAGE"
+          bash scripts/build_combined_image.sh "$COMBINED_IMAGE" "ansible/inventories/prod/group_vars/nautobot.yml" "$GHCR_USER" "$GHCR_TOKEN"
+          # Also tag "latest" for convenience and push
+          docker tag "$COMBINED_IMAGE" "${IMAGE_REPO}:latest"
+          echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USER --password-stdin
+          docker push "${IMAGE_REPO}:latest"
+        # Save the chosen image into outputs for later steps
+      - name: Set image outputs
+        id: set_image
+        run: echo "image=${{ env.IMAGE_REPO }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Terraform Init
+        working-directory: terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform init
+          terraform apply -auto-approve -var="ssh_key_name=${{ secrets.AWS_SSH_KEY_NAME }}" -var="ami_id=${{ secrets.AMI_ID }}" -var="aws_region=${{ secrets.AWS_REGION }}"
+
+      - name: Get Instance IP
+        working-directory: terraform
+        id: tf_out
+        run: |
+          terraform output -raw instance_public_ip > instance_ip.txt
+          echo "ip=$(cat instance_ip.txt)" >> $GITHUB_OUTPUT
+
+      - name: Create dynamic inventory
+        run: |
+          echo "[nautobot_servers]" > inventory.ini
+          echo "${{ steps.tf_out.outputs.ip }}" >> inventory.ini
+          echo "ansible_user=ubuntu" >> inventory.ini
+
+      - name: Run Ansible Playbook (deploy)
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: ansible/playbooks/deploy.yml
+          inventory: inventory.ini
+          args: >-
+            -e "combined_image=${{ env.IMAGE_REPO }}:${{ github.sha }}"
+            -e "combined_image_tag=${{ github.sha }}"
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          ANSIBLE_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}

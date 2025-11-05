@@ -1,0 +1,21 @@
+---
+- name: Ensure plugin directory exists
+  file:
+    path: /opt/plugins
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Clone plugin repositories
+  git:
+    repo: "{{ item.repo }}"
+    dest: "/opt/plugins/{{ item.name }}"
+    version: "{{ item.branch | default('main') }}"
+    force: yes
+  loop: "{{ plugins }}"
+  register: git_results
+
+- name: Show cloned plugin dirs
+  debug:
+    var: git_results
