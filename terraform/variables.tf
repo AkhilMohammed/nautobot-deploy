@@ -5,13 +5,13 @@ variable "aws_region" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.medium"   # ✅ better CPU & RAM for Nautobot
+  default = "t3.micro"   # ✅ better CPU & RAM for Nautobot
 }
 
 variable "ami_id" {
   type    = string
   # ✅ Latest Ubuntu 22.04 LTS for eu-north-1 (HVM)
-  default = "ami-07fe61fd7f2c8abed"
+  default = "ami-04d85b82a17e17439"
 }
 
 variable "ssh_key_name" {
