@@ -8,5 +8,5 @@
 
   roles:
     - docker-install
-    - fetch-plugins
+    - fetch_plugins
     - deploy-compose
