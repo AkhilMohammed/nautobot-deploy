@@ -84,11 +84,13 @@ jobs:
           terraform output -raw instance_public_ip > ../instance_ip.txt
           echo "ip=$(cat ../instance_ip.txt)" >> $GITHUB_OUTPUT
 
-      - name: Save SSH private key to file
+      - name: Save SSH private key
         run: |
           mkdir -p ~/.ssh
-          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          cat <<EOF > ~/.ssh/id_rsa
+          ${{ secrets.SSH_PRIVATE_KEY }}
+          EOF
+              chmod 600 ~/.ssh/id_rsa
 
       - name: Create Dynamic Inventory
         run: |
