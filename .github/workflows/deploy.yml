@@ -84,23 +84,26 @@ jobs:
           terraform output -raw instance_public_ip > ../instance_ip.txt
           echo "ip=$(cat ../instance_ip.txt)" >> $GITHUB_OUTPUT
 
-      - name: Create Dynamic Inventory
-        run: |
-          mkdir -p ansible
-          echo "[nautobot_servers]" > ansible/inventory.ini
-          echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu" >> ansible/inventory.ini
-
       - name: Save SSH private key to file
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      - name: Create Dynamic Inventory
+        run: |
+          mkdir -p ansible
+          echo "[nautobot_servers]" > ansible/inventory.ini
+          echo "${{ steps.tf_out.outputs.ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ansible/inventory.ini
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ steps.tf_out.outputs.ip }} "echo 'SSH OK'"
+
       - name: Deploy Nautobot on EC2
         run: |
           ansible-playbook playbooks/deploy.yml \
             -i ansible/inventory.ini \
-            -e "combined_image=${IMAGE_REPO}:${GITHUB_SHA}" \
-            -e "ansible_ssh_private_key_file=~/.ssh/id_rsa"
+            -e "combined_image=${IMAGE_REPO}:${GITHUB_SHA}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
