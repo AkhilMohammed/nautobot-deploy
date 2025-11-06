@@ -17,7 +17,7 @@ variable "ami_id" {
 variable "ssh_key_name" {
   type    = string
   # ✅ Must match the key pair name uploaded to AWS
-  default = "NaC"
+  default = "Nacdev"
 }
 
 variable "vpc_security_group_ids" {
