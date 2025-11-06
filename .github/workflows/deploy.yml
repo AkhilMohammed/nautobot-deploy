@@ -118,3 +118,23 @@ jobs:
             -e "combined_image=${IMAGE_REPO}:${GITHUB_SHA}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
+
+  cleanup-on-failure:
+  needs: build-and-deploy
+  runs-on: ubuntu-latest
+  if: failure()  # ✅ cleanup only when previous job fails
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.8.5
+
+    - name: Terraform Destroy (remove only created resources)
+      working-directory: terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: terraform destroy -auto-approve

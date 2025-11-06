@@ -4,13 +4,37 @@
     update_cache: yes
     cache_valid_time: 3600
 
-- name: Install packages
+- name: Install prerequisites
   apt:
     name:
-      - docker.io
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    state: present
+    filename: docker
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Docker and Compose plugin
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
       - docker-compose-plugin
-      - git
-      - python3-pip
     state: present
 
 - name: Ensure user 'ubuntu' exists (safe)
