@@ -36,11 +36,9 @@ jobs:
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           COMBINED_IMAGE="${IMAGE_REPO}:${{ github.sha }}"
           echo "Building combined image → $COMBINED_IMAGE"
-          
           bash scripts/build_combined_image.sh \
             "$COMBINED_IMAGE" \
             "ansible/inventories/prod/group_vars/nautobot.yml" \
@@ -48,16 +46,13 @@ jobs:
             "$DOCKERHUB_TOKEN"
 
           docker tag "$COMBINED_IMAGE" "${IMAGE_REPO}:latest"
-
-          echo "$DOCKERHUB_TOKEN" | docker login \
-            -u "$DOCKERHUB_USERNAME" --password-stdin
-
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           docker push "$COMBINED_IMAGE"
           docker push "${IMAGE_REPO}:latest"
 
       - name: Set image for next steps
         id: set_image
-        run: echo "image=${{ env.IMAGE_REPO }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: echo "image=${IMAGE_REPO}:${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Terraform Init
         working-directory: terraform
@@ -84,11 +79,17 @@ jobs:
           terraform output -raw instance_public_ip > ../instance_ip.txt
           echo "ip=$(cat ../instance_ip.txt)" >> $GITHUB_OUTPUT
 
-      - name: Save SSH private key to file
+      # --- SSH setup ---
+      - name: Save SSH private key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+      - name: Start SSH agent and add key
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
 
       - name: Create Dynamic Inventory
         run: |
@@ -104,10 +105,9 @@ jobs:
             sleep 12
           done
 
-
       - name: Test SSH connection
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ steps.tf_out.outputs.ip }} "echo 'SSH OK'"
+          ssh -vvv -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ steps.tf_out.outputs.ip }} "echo 'SSH OK'"
 
       - name: Deploy Nautobot on EC2
         run: |
